@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily Communication Log</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        .category-select { width: 100%; }
+        .entry { width: 100%; height: 50px; }
+    </style>
+</head>
+<body>
+    <h2>Daily Communication Log</h2>
+    <label for="date">Date:</label>
+    <input type="date" id="date">
+    <br><br>
+    <table id="log-table">
+        <tr>
+            <th>Category</th>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+            <th>Saturday</th>
+            <th>Sunday</th>
+        </tr>
+        <tr>
+            <td>
+                <select class="category-select">
+                    <option value="Maintenance Issues">Maintenance Issues</option>
+                    <option value="Personal Issues">Personal Issues</option>
+                    <option value="Call-Ins">Call-Ins</option>
+                    <option value="Customer Complaints">Customer Complaints</option>
+                    <option value="Messages">Messages</option>
+                    <option value="Sundries to Post">Sundries to Post</option>
+                </select>
+            </td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+            <td><textarea class="entry"></textarea></td>
+        </tr>
+    </table>
+    <br>
+    <label for="initials">Initials:</label>
+    <input type="text" id="initials">
+    <br><br>
+    <button onclick="addRow()">Add Another Category</button>
+    <button onclick="undoChanges()">Undo</button>
+    <script>
+        // Store previous states
+        let history = [];
+
+        // Function to add a new row
+        function addRow() {
+            let table = document.getElementById("log-table");
+            let newRow = table.insertRow(-1);
+            let cell1 = newRow.insertCell(0);
+            let select = document.createElement("select");
+            select.classList.add("category-select");
+            let categories = ["Maintenance Issues", "Personal Issues", "Call-Ins", "Customer Complaints", "Messages", "Sundries to Post"];
+            categories.forEach(category => {
+                let option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
+            });
+            cell1.appendChild(select);
+            for (let i = 1; i <= 7; i++) {
+                let cell = newRow.insertCell(i);
+                let textarea = document.createElement("textarea");
+                textarea.classList.add("entry");
+                cell.appendChild(textarea);
+            }
+            saveState(); // Save the state after adding a new row
+        }
+
+        // Function to save the current state of the log
+        function saveState() {
+            let entries = [];
+            let rows = document.querySelectorAll('#log-table tr');
+
+            rows.forEach((row, rowIndex) => {
+                if (rowIndex === 0) return; // Skip the header row
+                let rowData = [];
+                let cells = row.querySelectorAll('textarea');
+                cells.forEach(cell => {
+                    rowData.push(cell.value);
+                });
+                entries.push(rowData);
+            });
+
+            // Save the current state to history (only push if it is not the same as the previous one)
+            history.push(entries);
+            if (history.length > 10) history.shift(); // Keep only the last 10 states
+        }
+
+        // Function to undo changes
+        function undoChanges() {
+            if (history.length < 1) {
+                alert("No changes to undo!");
+                return;
+            }
+            // Remove the latest state from the history
+            history.pop();
+            let lastState = history[history.length - 1] || [];
+            
+            // Restore the previous state (if any)
+            let rows = document.querySelectorAll('#log-table tr');
+            let dataIndex = 0;
+            
+            rows.forEach((row, rowIndex) => {
+                if (rowIndex === 0) return; // Skip header row
+                let cells = row.querySelectorAll('textarea');
+                cells.forEach(cell => {
+                    cell.value = lastState[dataIndex] || '';
+                    dataIndex++;
+                });
+            });
+        }
+
+        // Call saveState on input changes
+        document.querySelectorAll('.entry').forEach(textarea => {
+            textarea.addEventListener('input', saveState);
+        });
+        
+    </script>
+</body>
+</html>
+<button id="load-data">Load Data</button>
+<div id="data-container"></div>
+
+<script>
+document.getElementById('load-data').addEventListener('click', function() {
+    fetch('/get_data')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('data-container').innerHTML = data.message;
+        })
+        .catch(error => console.error('Error:', error));
+});
+</script>
